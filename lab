@@ -1,5 +1,6 @@
 __________________________________________________
 1_1
+A. Report about income from sales by product, client and sales person. Please mind discounts. Also mind that for some combinations of values in these dimensions  there are no sales at all, so create two versions of queries with and without zero values.
 
 SELECT 
  P.Name as ProductName,
@@ -69,7 +70,7 @@ GROUP BY GROUPING SETS((P.Name, C.CustomerID, C.SalesPerson), (P.Name, C.Custome
 
 ___________________________________________________
 1_2
-
+B. Report about income from sales by product, client and country (region) for billing, shipping and client residency as they can be different. Is it case according our data? But you should generalize in any case. Please mind discounts. You should include in that report only data that supported by sales (so no zero entries except discounted price is zero).
 
 SELECT 
  P.Name as ProductName,
@@ -108,7 +109,7 @@ ORDER BY P.Name, SOH.CustomerID, Acust.CountryRegion, Aship.CountryRegion, Abill
 
 __________________________________________________
 1_3
-
+C. Report about income from sales and provided discounts by location in form of hierarchy city>state/province>country/region. In that report you can rely on unique geographical names, but in general it is not the case. Think about how to solve that task in case that there is a possibility of existence of multiple cities in the same province with the same name. For big cities someone would need more detailed report that can include city districts, solve this task for extra points.
 
 SELECT
  CONCAT(A.CountryRegion, '>', A.StateProvince, '>', A.City) as PATH,
@@ -130,7 +131,7 @@ ORDER BY A.CountryRegion DESC, A.StateProvince DESC, A.City DESC;
 
 __________________________________________________
 1_4
-
+D. Report about income from sales and provided discounts by product and hierarchy of product categories (high level category-> next level category->...->low level category->product). Please mind that some products can be outside (any) category or be only partially categorized (be not in low level of hierarchy). You can rely on you data to solve to solve this task (especially on that how much subcategories in the current data set), but try to think how to solve this task in general (with arbitrary category tree).
 
 SELECT 
  CONCAT(parentPC.Name, '>', childPC.Name, '>', P.Name) as PATH,
@@ -154,7 +155,7 @@ ORDER BY parentPC.Name DESC;
 
 __________________________________________________
 1.5
-
+E. Create integral report on number of product sales by product, client, sales person and hierarchy of regions.
 
 SELECT
 CONCAT(A.CountryRegion, '>', A.StateProvince, '>', A.City) as PATH,
@@ -181,7 +182,7 @@ GROUP BY GROUPING SETS((A.CountryRegion, A.StateProvince, A.City, P.Name, C.Cust
 ORDER BY A.CountryRegion DESC, A.StateProvince DESC, A.City DESC;
 __________________________________________________
 2_1
-
+A. Rank your sales persons by number of clients, report should include rank, sales person id and client number in descending order.
 
  SELECT
   (RANK() OVER (ORDER BY (COUNT(*)) desc)) as RANK,
@@ -193,6 +194,7 @@ __________________________________________________
  ORDER by RANK;
 _________________________________
 2_2
+B. Rank your sales persons by number of sales, your report should include all sales persons with id, dense rank and number of sales in descending order.
 
  SELECT
   DENSE_RANK() OVER (ORDER BY (COUNT(SOH.customerID)) desc) as RANK,
@@ -207,8 +209,7 @@ _________________________________
 
 ___________________________________________________
 2_3
-
-Ранжируйте продавца по доходу от продаж. Отчет должен включать всех продавцов с идентификатором, званием и доходом в порядке убывания.
+C. Rank your sales person by income from sales, your report should include all sales persons with id, rank and income in descending order.
 
  SELECT
   (DENSE_RANK() OVER (ORDER BY (SUM(SOD.LineTotal)) desc)) as RANK,
@@ -227,7 +228,7 @@ ___________________________________________________
 
 ____________________________________________________
 2_4
-
+A. Rank regions / states in the country by number of customers (use main office address), your report should include country, state or region, number of customers and percent rank ordered by country (alphabetically) and number of clients (descending). In case of equality in client numbers order region or states alphabetically.
 
 SELECT
   A.CountryRegion as CountryRegion,
@@ -244,7 +245,7 @@ FROM
  ORDER by A.CountryRegion, COUNT(CA.CustomerID) DESC, A.StateProvince;
 _______________________________________________________
 2_5
-
+B. Include in previous report customers without information about address. Use dense rank instead of percent rank in that report.
 
 
 SELECT
@@ -266,7 +267,7 @@ RIGHT OUTER JOIN
 
 _______________________________________________________
 2_6
-
+C. Rank cities in the country by number of customers (use main office address), your report should include country, state or region, city,  number of clients, rank (use plane rank here) and difference in number of client with previous position in by country ranking (for first position should be null). Order your report by country name (alphabetically), number of clients (descending) and city name (alphabetically).   
 
 
 SELECT
