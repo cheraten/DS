@@ -1,0 +1,287 @@
+__________________________________________________
+1_1
+
+SELECT 
+ P.Name as ProductName,
+ C.CustomerID as Customer,
+ CASE 
+  WHEN grouping(P.Name)=1
+   THEN '//GRAND TOTAL:'
+  WHEN grouping(C.CustomerID)=1
+   THEN '//TOTAL BY PRODUCT:'
+  ELSE C.SalesPerson END AS SalesPerson,
+ SUM(SOD.LineTotal) as SUM
+FROM 
+ [SalesLT].[Customer] C,
+ [SalesLT].[SalesOrderHeader] SOH,
+ [SalesLT].[SalesOrderDetail] SOD,
+ [SalesLT].[Product] P
+WHERE
+ C.CustomerID = SOH.CustomerID
+ AND SOH.SalesOrderID = SOD.SalesOrderID
+ AND SOD.ProductID = P.ProductID
+GROUP BY GROUPING SETS((P.Name, C.CustomerID, C.SalesPerson), (P.Name, C.CustomerID), (P.Name), ())
+ORDER BY P.Name, C.CustomerID, C.SalesPerson;
+
+____
+
+SELECT 
+ P.Name as ProductName,
+ C.CustomerID as Customer,
+ CASE 
+  WHEN grouping(P.Name)=1
+   THEN '//GRAND TOTAL:'
+ ELSE C.SalesPerson END AS SalesPerson,
+ SUM(SOD.LineTotal) as SUM
+FROM 
+ [SalesLT].[SalesOrderHeader] SOH
+RIGHT OUTER JOIN 
+ [SalesLT].[Customer] C ON 
+ SOH.customerID = C.customerID
+LEFT OUTER JOIN 
+ [SalesLT].[SalesOrderDetail] SOD ON 
+ SOH.SalesOrderID = SOD.SalesOrderID 
+LEFT OUTER JOIN 
+ [SalesLT].[Product] P ON 
+ SOD.productID = P.productID 
+GROUP BY GROUPING SETS((P.Name, C.CustomerID, C.SalesPerson), (P.Name, C.CustomerID), (P.Name), ())
+UNION
+SELECT 
+ P.Name as ProductName,
+ C.CustomerID as Customer,
+ CASE 
+  WHEN grouping(P.Name)=1
+   THEN '//GRAND TOTAL:'
+ ELSE C.SalesPerson END AS SalesPerson,
+ SUM(SOD.LineTotal) as SUM
+FROM 
+ [SalesLT].[SalesOrderHeader] SOH
+LEFT OUTER JOIN 
+ [SalesLT].[Customer] C ON 
+ SOH.customerID = C.customerID
+LEFT OUTER JOIN 
+ [SalesLT].[SalesOrderDetail] SOD ON 
+ SOH.SalesOrderID = SOD.SalesOrderID 
+RIGHT OUTER JOIN 
+ [SalesLT].[Product] P ON 
+ SOD.productID = P.productID 
+GROUP BY GROUPING SETS((P.Name, C.CustomerID, C.SalesPerson), (P.Name, C.CustomerID), (P.Name), ());
+
+___________________________________________________
+1_2
+
+
+SELECT 
+ P.Name as ProductName,
+ SOH.CustomerID as CustomerID,
+ Acust.CountryRegion as residencyCountryRegion,
+ Aship.CountryRegion as shippingCountryRegion,
+ CASE 
+  WHEN grouping(P.Name)=1
+   THEN '//GRAND TOTAL:'
+  WHEN grouping(SOH.CustomerID)=1
+   THEN '//TOTAL BY PRODUCT:'
+  ELSE Abill.CountryRegion END AS billingCountryRegion,
+ SUM(SOD.LineTotal) as SUM
+FROM 
+ [SalesLT].[SalesOrderHeader] SOH
+INNER JOIN 
+ [SalesLT].[SalesOrderDetail] SOD ON 
+ SOH.SalesOrderID = SOD.SalesOrderID
+INNER JOIN 
+ [SalesLT].[Product] P ON 
+ SOD.ProductID = P.ProductID
+INNER JOIN 
+ [SalesLT].[CustomerAddress] CA ON 
+ SOH.CustomerID = CA.CustomerID
+INNER JOIN 
+ [SalesLT].[Address] Acust ON 
+ Acust.AddressID = CA.AddressID
+INNER JOIN 
+ [SalesLT].[Address] Aship ON 
+ Aship.AddressID = SOH.ShipToAddressID
+INNER JOIN 
+ [SalesLT].[Address] Abill ON 
+ Abill.AddressID = SOH.BillToAddressID
+GROUP BY GROUPING SETS((P.Name, SOH.CustomerID, Acust.CountryRegion, Aship.CountryRegion, Abill.CountryRegion), (P.Name, SOH.CustomerID), (P.Name), ())
+ORDER BY P.Name, SOH.CustomerID, Acust.CountryRegion, Aship.CountryRegion, Abill.CountryRegion;
+
+__________________________________________________
+1_3
+
+
+SELECT
+ CONCAT(A.CountryRegion, '>', A.StateProvince, '>', A.City) as PATH,
+ SOD.UnitPriceDiscount AS Discount,
+ SUM(SOD.LineTotal) as SUM
+FROM 
+ [SalesLT].[Address] A,
+ [SalesLT].[CustomerAddress] CA,
+ [SalesLT].[Customer] C,
+ [SalesLT].[SalesOrderHeader] SOH,
+ [SalesLT].[SalesOrderDetail] SOD
+WHERE
+ C.CustomerID = CA.CustomerID
+ AND CA.AddressID = A.AddressID
+ AND C.CustomerID = SOH.CustomerID
+ AND SOH.SalesOrderID = SOD.SalesOrderID
+GROUP BY ROLLUP(A.CountryRegion, A.StateProvince, A.City, UnitPriceDiscount)
+ORDER BY A.CountryRegion DESC, A.StateProvince DESC, A.City DESC;
+
+__________________________________________________
+1_4
+
+
+SELECT 
+ CONCAT(parentPC.Name, '>', childPC.Name, '>', P.Name) as PATH,
+ SOD.UnitPriceDiscount AS Discount,
+ SUM(SOD.LineTotal) as SUM
+FROM 
+ [SalesLT].[Customer] C,
+ [SalesLT].[SalesOrderHeader] SOH,
+ [SalesLT].[SalesOrderDetail] SOD,
+ [SalesLT].[Product] P,
+ [SalesLT].[ProductCategory] childPC,
+ [SalesLT].[ProductCategory] parentPC
+WHERE
+ C.CustomerID = SOH.CustomerID
+ AND SOH.SalesOrderID = SOD.SalesOrderID
+ AND SOD.ProductID = P.ProductID
+ AND P.ProductCategoryID = childPC.ProductCategoryID
+ AND childPC.ParentProductCategoryID = parentPC.ProductCategoryID
+GROUP BY ROLLUP(parentPC.Name, childPC.Name, P.Name, SOD.UnitPriceDiscount)
+ORDER BY parentPC.Name DESC;
+
+__________________________________________________
+1.5
+
+
+SELECT
+CONCAT(A.CountryRegion, '>', A.StateProvince, '>', A.City) as PATH,
+P.Name as Product,
+C.CustomerID as Customer,
+C.SalesPerson as SalesPerson,
+SOD.UnitPriceDiscount AS Discount,
+SUM(SOD.LineTotal) as SUM
+FROM
+[SalesLT].[Address] A,
+[SalesLT].[CustomerAddress] CA,
+[SalesLT].[Customer] C,
+[SalesLT].[SalesOrderHeader] SOH,
+[SalesLT].[SalesOrderDetail] SOD,
+[SalesLT].[Product] P
+WHERE
+C.CustomerID = CA.CustomerID
+AND CA.AddressID = A.AddressID
+AND C.CustomerID = SOH.CustomerID
+AND SOH.SalesOrderID = SOD.SalesOrderID
+AND SOD.ProductID = P.ProductID
+GROUP BY GROUPING SETS((A.CountryRegion, A.StateProvince, A.City, P.Name, C.CustomerID, C.SalesPerson, SOD.UnitPriceDiscount), 
+ (A.CountryRegion, A.StateProvince, A.City), (A.CountryRegion), ())
+ORDER BY A.CountryRegion DESC, A.StateProvince DESC, A.City DESC;
+__________________________________________________
+2_1
+
+
+ SELECT
+  (RANK() OVER (ORDER BY (COUNT(*)) desc)) as RANK,
+  SalesPerson as SalesPerson,
+  COUNT(*) as COUNT
+ FROM
+  [SalesLT].[Customer]
+ GROUP BY SalesPerson
+ ORDER by RANK;
+_________________________________
+2_2
+
+ SELECT
+  DENSE_RANK() OVER (ORDER BY (COUNT(SOH.customerID)) desc) as RANK,
+  C.SalesPerson as SalesPerson,
+  COUNT(SOH.customerID) as COUNT
+ FROM
+  [SalesLT].[SalesOrderHeader] SOH
+ RIGHT OUTER JOIN
+  [SalesLT].[Customer] C ON 
+  SOH.customerID = C.customerID
+ GROUP BY C.SalesPerson, C.SalesPerson;
+
+___________________________________________________
+2_3
+
+Ранжируйте продавца по доходу от продаж. Отчет должен включать всех продавцов с идентификатором, званием и доходом в порядке убывания.
+
+ SELECT
+  (DENSE_RANK() OVER (ORDER BY (SUM(SOD.LineTotal)) desc)) as RANK,
+  C.SalesPerson as SalesPerson,
+  SUM(SOD.LineTotal) as SUM
+ FROM
+  [SalesLT].[SalesOrderHeader] SOH
+ INNER JOIN 
+  [SalesLT].[SalesOrderDetail] SOD ON 
+  SOH.SalesOrderID = SOD.SalesOrderID
+ RIGHT OUTER JOIN
+  [SalesLT].[Customer] C ON 
+  SOH.customerID = C.customerID
+ GROUP BY C.SalesPerson, C.SalesPerson, C.SalesPerson
+ ORDER by SUM desc;
+
+____________________________________________________
+2_4
+
+
+SELECT
+  A.CountryRegion as CountryRegion,
+  A.StateProvince as StateProvince,
+  COUNT(CA.CustomerID) as COUNT,
+  PERCENT_RANK() OVER (PARTITION BY A.CountryRegion ORDER BY(COUNT(CA.CustomerID))) AS PctRank 
+FROM 
+ [SalesLT].[Address] A,
+ [SalesLT].[CustomerAddress] CA
+ WHERE
+  CA.AddressID = A.AddressID
+  AND CA.AddressType = 'Main Office'
+ GROUP BY A.CountryRegion,  StateProvince,  StateProvince, StateProvince
+ ORDER by A.CountryRegion, COUNT(CA.CustomerID) DESC, A.StateProvince;
+_______________________________________________________
+2_5
+
+
+
+SELECT
+  A.CountryRegion as CountryRegion,
+  A.StateProvince as StateProvince,
+  COUNT(C.CustomerID) as COUNT,
+  DENSE_RANK() OVER (PARTITION BY A.CountryRegion ORDER BY(COUNT(C.CustomerID)) DESC) AS DnsRank 
+FROM 
+ [SalesLT].[CustomerAddress] CA
+LEFT OUTER JOIN
+ [SalesLT].[Address] A ON
+ CA.AddressType = 'Main Office' 
+ AND CA.AddressID = A.AddressID
+RIGHT OUTER JOIN
+  [SalesLT].[Customer] C ON
+  C.CustomerID = CA.CustomerID
+ GROUP BY A.CountryRegion,  StateProvince,  StateProvince, StateProvince
+ ORDER by A.CountryRegion, COUNT(C.CustomerID) DESC, A.StateProvince;
+
+_______________________________________________________
+2_6
+
+
+
+SELECT
+A.CountryRegion as CountryRegion,
+A.StateProvince as StateProvince,
+A.City as City,
+(RANK() OVER (ORDER BY (COUNT(CA.CustomerID)) desc)) as RANK,
+COUNT(CA.CustomerID) as COUNT,
+COUNT(CA.CustomerID) - LAG(COUNT(CA.CustomerID)) 
+ OVER (PARTITION BY A.CountryRegion ORDER BY COUNT(CA.CustomerID) DESC, A.City) as DIFF
+FROM
+[SalesLT].[Address] A,
+[SalesLT].[CustomerAddress] CA
+WHERE
+CA.AddressID = A.AddressID
+AND CA.AddressType = 'Main Office'
+GROUP BY CountryRegion, StateProvince, City, City
+ORDER BY A.CountryRegion, COUNT(CA.CustomerID) DESC, A.City;
